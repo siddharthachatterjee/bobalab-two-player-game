@@ -1,0 +1,9 @@
+name = "two-player"
+
+[tajriba.auth]
+srtoken = "BdNgiVmtLoqQNbgg"
+
+[[tajriba.auth.users]]
+name = "Admin"
+username = "admin"
+password = "VrVXGRRI"
