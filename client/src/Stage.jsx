@@ -1,36 +1,31 @@
 import {
   usePlayer,
-  usePlayers,
-  useRound,
+  useStage,
 } from "@empirica/core/player/classic/react";
-import { Loading } from "@empirica/core/player/react";
 import React from "react";
-import { JellyBeans } from "./examples/JellyBeans";
-import { MineSweeper } from "./examples/MineSweeper";
+import { Pending } from "./components/ui";
+import { Decide } from "./stages/Decide";
+import { Message } from "./stages/Message";
+import { ShiftResults } from "./stages/ShiftResults";
 
 export function Stage() {
   const player = usePlayer();
-  const players = usePlayers();
-  const round = useRound();
+  const stage = useStage();
 
   if (player.stage.get("submit")) {
-    if (players.length === 1) {
-      return <Loading />;
-    }
-
     return (
-      <div className="text-center text-gray-400 pointer-events-none">
-        Please wait for other player(s).
+      <div className="pt-24">
+        <Pending>Waiting for your partner</Pending>
       </div>
     );
   }
 
-  switch (round.get("task")) {
-    case "jellybeans":
-      return <JellyBeans />;
-    case "minesweeper":
-      return <MineSweeper />;
-    default:
-      return <div>Unknown task</div>;
-  }
+  const screen = { message: Message, decide: Decide, results: ShiftResults }[stage.get("step")];
+  if (!screen) return <div>Unknown stage</div>;
+  // Keyed by stage so each new screen fades in.
+  return (
+    <div key={stage.id} className="anim-fade-up w-full flex justify-center">
+      {React.createElement(screen)}
+    </div>
+  );
 }

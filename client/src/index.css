@@ -11,3 +11,35 @@
     -moz-appearance: textfield;
   }
 }
+
+body {
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  background: #f3f0e8;
+  color: #1d1c1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Small, quiet motion. Everything is skipped for reduced-motion users. */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes from-left {
+  from { opacity: 0; transform: translate(calc(-50% - 80px), -50%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+@keyframes from-right {
+  from { opacity: 0; transform: translate(calc(-50% + 80px), -50%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+@keyframes crate-drop {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+.anim-fade-up { animation: fade-up 0.4s ease-out both; }
+.anim-from-left { animation: from-left 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-from-right { animation: from-right 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.anim-crate { animation: crate-drop 0.25s ease-out both; transform-box: fill-box; }
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-up, .anim-from-left, .anim-from-right, .anim-crate { animation: none; }
+}

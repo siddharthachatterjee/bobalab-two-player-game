@@ -31,6 +31,8 @@ export default defineConfig({
       allow: [
         // search up for workspace root
         searchForWorkspaceRoot(process.cwd()),
+        // game logic shared with the server
+        "../shared",
       ],
     },
   },

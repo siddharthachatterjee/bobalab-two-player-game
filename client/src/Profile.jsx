@@ -4,42 +4,36 @@ import {
   useStage,
 } from "@empirica/core/player/classic/react";
 import React from "react";
-import { Avatar } from "./components/Avatar";
+import { GAME, formatMoney } from "../../shared/model.js";
+import { RoleIcon } from "./components/Icons";
 import { Timer } from "./components/Timer";
+import { roleInfo } from "./components/ui";
 
 export function Profile() {
   const player = usePlayer();
   const round = useRound();
   const stage = useStage();
 
-  const score = player.get("score") || 0;
+  const roleKey = player.get("role");
+  const role = roleInfo(roleKey);
+  const step = stage?.get("step");
+  const where = { message: "Message", decide: "Decide", results: "Results" }[step] ?? "";
 
   return (
-    <div className="min-w-lg md:min-w-2xl mt-2 m-x-auto px-3 py-2 text-gray-500 rounded-md grid grid-cols-3 items-center border-.5">
-      <div className="leading-tight ml-1">
-        <div className="text-gray-600 font-semibold">
-          {round ? round.get("name") : ""}
+    <header className="border-b border-line">
+      <div className="mx-auto max-w-4xl h-16 px-6 grid grid-cols-[1fr_auto_1fr] items-center">
+        <div className="flex items-center gap-2.5 text-[14px] text-ink">
+          <RoleIcon role={roleKey} size={18} />
+          <span className="font-medium">{role.name}</span>
+          <span className="text-faint">
+            · Day {round?.get("shift") ?? 1} of {GAME.shifts} · {where}
+          </span>
         </div>
-        <div className="text-empirica-500 font-medium">
-          {stage ? stage.get("name") : ""}
-        </div>
-      </div>
-
-      <Timer />
-
-      <div className="flex space-x-3 items-center justify-end">
-        <div className="flex flex-col items-center">
-          <div className="text-xs font-semibold uppercase tracking-wide leading-none text-gray-400">
-            Score
-          </div>
-          <div className="text-3xl font-semibold !leading-none tabular-nums">
-            {score}
-          </div>
-        </div>
-        <div className="h-11 w-11">
-          <Avatar player={player} />
+        <Timer />
+        <div className="text-right font-mono text-[15px] tabular-nums text-ink">
+          {formatMoney(player.get("coins") || 0)} <span className="text-faint">earned</span>
         </div>
       </div>
-    </div>
+    </header>
   );
 }

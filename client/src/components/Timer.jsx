@@ -8,12 +8,15 @@ export function Timer() {
   if (timer?.remaining || timer?.remaining === 0) {
     remaining = Math.round(timer?.remaining / 1000);
   }
+  const low = remaining !== undefined && remaining <= 10;
 
   return (
-    <div className="flex flex-col items-center">
-      <h1 className="tabular-nums text-3xl text-gray-500 font-semibold">
-        {humanTimer(remaining)}
-      </h1>
+    <div
+      className={`font-mono text-xl tabular-nums ${
+        low ? "text-accent" : "text-ink"
+      }`}
+    >
+      {humanTimer(remaining)}
     </div>
   );
 }

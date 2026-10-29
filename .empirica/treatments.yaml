@@ -1,19 +1,30 @@
+# Conditions from Sinchaisri & Wang, "Information Exchange through AI".
+# disclosure: direct = no AI forecast (Sec 4.5); full = exact demand;
+#             optimal = exact demand, except a range near the cutoff (Prop 2, Eq. 28).
+# tips: AI suggests which message to send (Sec 4.4).
+# The sync weight gamma is fixed at 0.25 in shared/model.js.
 factors:
-  - desc: playerCount determines the number of Players are in a Game.
+  - desc: Number of players in a game.
     name: playerCount
     values:
-      - value: 1
       - value: 2
-      - value: 3
-      - value: 5
-      - value: 8
-      - value: 13
+  - desc: What the AI reveals about demand.
+    name: disclosure
+    values:
+      - value: direct
+      - value: full
+      - value: optimal
+  - desc: Whether the AI suggests what message to send.
+    name: tips
+    values:
+      - value: "off"
+      - value: "on"
 treatments:
-  - desc: "Single-player Game"
-    factors:
-      playerCount: 1
-    name: Solo
-  - desc: "Two-player Game"
-    factors:
-      playerCount: 2
-    name: Two Players
+  - name: "1 · No forecast"
+    factors: { playerCount: 2, disclosure: direct, tips: "off" }
+  - name: "2 · Full forecast"
+    factors: { playerCount: 2, disclosure: full, tips: "off" }
+  - name: "3 · Optimal forecast"
+    factors: { playerCount: 2, disclosure: optimal, tips: "off" }
+  - name: "4 · Optimal forecast + tips"
+    factors: { playerCount: 2, disclosure: optimal, tips: "on" }
