@@ -2,7 +2,7 @@
 # disclosure: direct = no AI forecast (Sec 4.5); full = exact demand;
 #             optimal = exact demand, except a range near the cutoff (Prop 2, Eq. 28).
 # tips: AI suggests which message to send (Sec 4.4).
-# The sync weight gamma is fixed at 0.25 in shared/model.js.
+# The coordination weight gamma is fixed at 0.35 in shared/model.js.
 factors:
   - desc: Number of players in a game.
     name: playerCount

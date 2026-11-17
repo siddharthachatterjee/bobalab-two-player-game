@@ -23,7 +23,9 @@
     "build": "vite build",
     "dev": "NODE_ENV=\"development\" vite",
     "dev:prod": "NODE_ENV=\"production\" vite",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "dev:study1": "vite --config vite.study1.config.js",
+    "build:study1": "vite build --config vite.study1.config.js && cp dist-study1/study1.html dist-study1/index.html"
   },
   "type": "module",
   "version": "0.0.0",

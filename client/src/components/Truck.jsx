@@ -1,17 +1,17 @@
 import React from "react";
 
 // A delivery truck whose bed fills with crates as the pick grows.
-// Half full (10 of 20 crates) is normal; each crate icon is 25 crates.
+// Half full (10 of 20 crates) is normal. perIcon is how much one crate icon
+// stands for: 0.25 in the 2-player game's units (25 crates), 4 for plain crates.
 const COLS = 5;
 const ROWS = 4;
 const SLOTS = COLS * ROWS;
-const PER_ICON = 0.25;
 
-export const crateIcons = (a) =>
-  Math.round(Math.max(0, Math.min(SLOTS, SLOTS / 2 + a / PER_ICON)));
+export const crateIcons = (a, perIcon = 0.25) =>
+  Math.round(Math.max(0, Math.min(SLOTS, SLOTS / 2 + a / perIcon)));
 
-export function Truck({ value, tone = "you", width = 220 }) {
-  const n = crateIcons(value ?? 0);
+export function Truck({ value, tone = "you", width = 220, perIcon = 0.25 }) {
+  const n = crateIcons(value ?? 0, perIcon);
   const cab = tone === "you" ? "#e2571e" : "#a8a293";
   const bedX = 6;
   const bedY = 8;

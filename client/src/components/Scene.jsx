@@ -2,14 +2,14 @@ import React from "react";
 
 // The setup at a glance: your plant, the AI relay, the other plant.
 // Message bubbles ride the wires: `outgoing` (yours) and `incoming` (theirs).
-export function Scene({ you, partner, outgoing, incoming }) {
+export function Scene({ you, partner, outgoing, incoming, partnerSub = "other branch" }) {
   return (
     <div className="flex items-end gap-2">
       <Plant name={you} sub="you" mine />
       <Wire bubble={outgoing} mine />
       <Relay />
       <Wire bubble={incoming} />
-      <Plant name={partner} sub="other branch" />
+      <Plant name={partner} sub={partnerSub} />
     </div>
   );
 }
