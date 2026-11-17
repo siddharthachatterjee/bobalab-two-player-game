@@ -1,6 +1,6 @@
 // The paid rounds: the shared screens (client/game/screens.jsx) wired to Empirica.
-// The server seals each player's view and delivered messages to that player
-// (server/src/callbacks.js); this component opens them and seals choices back.
+// The server writes each player's view, delivered messages and result
+// (server/src/callbacks.js); this component reads them and writes choices.
 import { useGame, usePlayer, useRound, useStage } from "@empirica/core/player/classic/react";
 import React, { useEffect, useMemo } from "react";
 import { loadArm } from "../../../shared/arms/index.js";
@@ -9,7 +9,6 @@ import { GameContext, makeRoles } from "../../game/context";
 import { Kicker, P, Page, RoundHeader, scrollToTop } from "../../game/parts";
 import { Results, Send, Ship } from "../../game/screens";
 import { Timer } from "../components/Timer";
-import { seal, useOpened, useServerKey } from "./vault";
 
 export function PairRound() {
   const game = useGame();
@@ -22,15 +21,14 @@ export function PairRound() {
   useEffect(scrollToTop, [stage.id]);
 
   const arm = loadArm(game.get("armId"));
-  const key = useServerKey(player, game.get("serverKey"));
-  const view = useOpened(key, player.round.get("view"));
-  const messages = useOpened(key, player.round.get("messages"));
-  const result = player.round.get("result"); // plain once the round is scored
+  const view = player.round.get("view");
+  const messages = player.round.get("messages");
+  const result = player.round.get("result");
   const header = { n: round.get("n"), practice: false };
 
-  // Seals this stage's choice to the server and ends the stage for this player.
-  const submit = async (name, value) => {
-    player.round.set(name, await seal(key, value));
+  // Writes this stage's choice and ends the stage for this player.
+  const submit = (name, value) => {
+    player.round.set(name, value);
     player.stage.set("submit", true);
   };
 
@@ -42,10 +40,7 @@ export function PairRound() {
     body = <Ship arm={arm} round={{ ...header, ...view, ...messages }} onDone={(c) => submit("ship", c)} />;
   else if (step === "results" && result)
     body = (
-      <Results arm={arm} round={result} last={result.n === PAIR_SESSION.paid} onNext={() => {
-          player.round.set("done", true);
-          player.stage.set("submit", true);
-        }} />
+      <Results arm={arm} round={result} last={result.n === PAIR_SESSION.paid} onNext={() => submit("done", true)} />
     );
   else body = <Waiting text="Waiting for the mediator" />;
 

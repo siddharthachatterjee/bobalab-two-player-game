@@ -2,14 +2,13 @@
 // The game (and so the arm) is assigned before intro steps run; roles are not,
 // so the instructions show the North plant and say roles are random.
 import { useGame, usePlayer } from "@empirica/core/player/classic/react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { loadArm } from "../../../shared/arms/index.js";
 import { PAIR_SESSION } from "../../../shared/pair.js";
 import { roundRecord } from "../../../shared/record.js";
 import { GameContext, makeRoles } from "../../game/context";
 import { Onboarding } from "../../game/onboarding";
 import { H2, Kicker, P, Page } from "../../game/parts";
-import { ensurePlayerKey } from "./vault";
 
 const INTRO = { roles: makeRoles("north", "person"), session: PAIR_SESSION };
 
@@ -18,10 +17,6 @@ export function PairIntro({ next }) {
   const player = usePlayer();
   const [screened, setScreened] = useState(false);
   const arm = loadArm(game.get("treatment").arm);
-  // The key pair for sealed values; made now so it's published before the game starts.
-  useEffect(() => {
-    ensurePlayerKey(player);
-  }, []);
 
   if (screened)
     return (

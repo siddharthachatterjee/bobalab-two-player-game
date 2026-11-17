@@ -13,13 +13,12 @@ There are two versions, built from the same code:
 |---|---|---|
 | `shared/rules.js` | All game rules as pure functions: load an arm, draw the market and situations, forward messages, the programmed partner, points | both |
 | `shared/pair.js` | One 2-player round from the server's side: the draw, both messages, both shipments, timeout fallbacks, `PAIR_SESSION` (round count, timers) | 2-player server |
-| `shared/secure.js` | Sealing values so only one browser (or only the server) can read them | 2-player |
 | `shared/record.js` | One round as a data row, the same in both versions | both |
 | `shared/arms/` | The supplied CSVs, `SPEC.md`, and `tables.js` (generated) | both |
 | `client/game/` | The screens (Send, Read & ship, Results), instructions, quiz, onboarding (instructions → solo practice → quiz), solo round runner | both |
 | `client/game/context.js` | `GameContext`: which plant the player runs, whether the partner is a program or a person, session shape. Every "North"/"South" label comes from here. | both |
 | `client/src/` | The Empirica app: `pair/PairIntro` (onboarding), `pair/PairRound` (paid rounds), `pair/Bonus` (exit) | 2-player |
-| `server/src/` | Empirica callbacks (`callbacks.js`) and the server's keys (`vault.js`) | 2-player |
+| `server/src/callbacks.js` | Empirica callbacks: moves values between attributes and `shared/pair.js` | 2-player |
 | `client/study1/` | The 1-player app and the researcher page | 1-player |
 
 Round data is stored from the player's point of view (`situation`, `sent`, `toPartner`, `partnerSent`, `fromPartner`, `partnerShip`), so the same screens work for either plant.
@@ -35,9 +34,9 @@ Round data is stored from the player's point of view (`situation`, `sent`, `toPa
 
 **Timeouts and drop-outs.** A stage that times out without a choice is filled in by the programmed policy (the arm's message rule; the shipment lookup), flagged `sentAuto`/`shipAuto` in the data. After 2 missed stages in a row the player is marked `dropped` and the program plays for them for the rest of the game, so their partner can finish.
 
-**Privacy.** Empirica 1.12 sends every attribute in a game to every player in it, even with `{ private: true }`, so a player could read the other's situation or the market in devtools. Values that must stay hidden until results are sealed (`shared/secure.js`): each browser makes a key pair (private half in localStorage), the server keeps its own in `.empirica/local/crate-factory-server-key.json`, and situations, delivered messages and the market are encrypted to one player or to the server only. Choices are sealed to the server. Once a round is scored nothing in it is secret, so its `result`, `record` and `outcome` are stored in plain text for export.
+**Privacy caveat.** Empirica 1.12 sends every attribute in a game to every player in it, even ones marked `{ private: true }`. Nothing secret is shown on screen, but a participant who opens the browser's devtools mid-round could read the partner's situation and message and the market. With a few cents at stake this is unlikely to matter; if a guarantee is needed, the in-round values can be encrypted per player (an earlier commit on the `two-player-arms` branch did this).
 
-**Data** (`empirica export`): per player and round, `record` holds the same row as the 1-player data (`shared/record.js`); per round, `outcome` holds the market and both situations; per player, `onboarding` (practice rounds and quiz), `bonus`, `dropped`.
+**Data** (`empirica export`): per player and round, `record` holds the same row as the 1-player data (`shared/record.js`); per round, `draw` holds the market and both situations; per player, `onboarding` (practice rounds and quiz), `bonus`, `dropped`.
 
 ```sh
 curl -fsS https://install.empirica.dev | sh   # once

@@ -1,21 +1,18 @@
 // The 2-player game on Empirica. The rules live in shared/ (rules.js, pair.js);
 // this file only moves values between Empirica attributes and those functions.
 //
-// Privacy: Empirica sends every attribute in a game to both players, so values
-// a player must not see yet are sealed (shared/secure.js, ./vault.js): to one
-// player ("for N/S"), or to the server only. Once a round is scored nothing in
-// it is secret, so its data row and outcome are stored in plain text for export.
+// Note: Empirica 1.12 sends every attribute in a game to both players, so the
+// values below are hidden on screen but readable in a browser's devtools.
 //
-//   round.draw               market + both situations       sealed, server
-//   round.messages           both sides' messages            sealed, server
-//   round.outcome            market + both situations       plain, after scoring
-//   player.round.view        { n, situation, suggestion }    sealed, for player
-//   player.round.send        { sent, secSend, ... }          sealed by client, for server
-//   player.round.messages    { sent, sentAuto, fromPartner } sealed, for player
-//   player.round.ship        { ship, guess, ... }            sealed by client, for server
-//   player.round.result      the scored round, both sides    plain, after scoring
-//   player.round.record      the data row (shared/record.js) plain, after scoring
-//   player.round.done        true when they leave results    plain, client
+//   round.draw               market + both situations       server
+//   round.messages           both sides' messages            server, after both send
+//   player.round.view        { n, situation, suggestion }    server, at round start
+//   player.round.send        { sent, secSend, ... }          client, Send stage
+//   player.round.messages    { sent, sentAuto, fromPartner } server, after both send
+//   player.round.ship        { ship, guess, ... }            client, Ship stage
+//   player.round.result      the scored round, both sides    server, after both ship
+//   player.round.record      the data row (shared/record.js) server, after both ship
+//   player.round.done        true when they leave results    client, Results stage
 import { ClassicListenersCollector } from "@empirica/core/admin/classic";
 import { loadArm } from "../../shared/arms/index.js";
 import {
@@ -28,19 +25,21 @@ import {
   startView,
 } from "../../shared/pair.js";
 import { roundRecord } from "../../shared/record.js";
-import { openFrom, openServer, sealFor, sealServer, serverPublicKey } from "./vault";
 
 export const Empirica = new ClassicListenersCollector();
 
 const armOf = (game) => loadArm(game.get("armId"));
 const byRole = (game) => Object.fromEntries(game.players.map((p) => [p.get("role"), p]));
-const report = (where) => (err) => console.error(`[crate-factory] ${where}:`, err);
+// Each role's value of a player.round attribute; missing roles and values stay undefined.
+const fromRoles = (game, key) => {
+  const players = byRole(game);
+  return Object.fromEntries(ROLES.map((r) => [r, players[r]?.round.get(key)]));
+};
 
 Empirica.onGameStart(({ game }) => {
   const { arm: armId } = game.get("treatment");
   loadArm(armId); // throws early on a bad treatment
   game.set("armId", armId);
-  serverPublicKey().then((k) => game.set("serverKey", k), report("serverKey"));
 
   const roles = Math.random() < 0.5 ? ROLES : [...ROLES].reverse();
   game.players.forEach((player, i) => {
@@ -58,29 +57,14 @@ Empirica.onGameStart(({ game }) => {
 });
 
 Empirica.onRoundStart(({ round }) => {
-  startRound(round).catch(report("round start"));
-});
-
-async function startRound(round) {
   const game = round.currentGame;
-  const draw = drawPairRound(armOf(game));
-  round.set("draw", await sealServer(draw));
-  for (const player of game.players) await sendView(player, round, draw);
-}
-
-async function sendView(player, round, draw) {
-  const view = { n: round.get("n"), ...startView(armOf(round.currentGame), draw.situation[player.get("role")]) };
-  player.round.set("view", await sealFor(player, view));
-}
-
-// If a browser lost its key and published a new one, re-seal what it should see now.
-Empirica.on("player", "pubKey", (ctx, { player }) => {
-  const round = player.currentRound;
-  if (!round?.get("draw") || !player.get("role")) return;
-  (async () => {
-    await sendView(player, round, await openServer(round.get("draw")));
-    if (round.get("messages")) await sendMessages(player, round, await openServer(round.get("messages")));
-  })().catch(report("reseal"));
+  const arm = armOf(game);
+  const draw = drawPairRound(arm);
+  round.set("draw", draw);
+  for (const player of game.players) {
+    const situation = draw.situation[player.get("role")];
+    player.round.set("view", { n: round.get("n"), ...startView(arm, situation) });
+  }
 });
 
 // A player who has dropped out is played by the program: submit for them at once.
@@ -94,46 +78,35 @@ Empirica.onStageEnded(({ stage }) => {
   const game = stage.currentGame;
   const step = stage.get("step");
   trackTimeouts(game, step);
-  if (step === "send") endSend(stage.round, game).catch(report("send"));
-  if (step === "ship") endShip(stage.round, game).catch(report("ship"));
+  if (step === "send") endSend(stage.round, game);
+  if (step === "ship") endShip(stage.round, game);
 });
 
-// Each player's sealed choices, opened; missing ones stay undefined.
-async function choices(game, key) {
-  const players = byRole(game);
-  const out = {};
-  for (const role of ROLES) out[role] = players[role] ? await openFrom(players[role], players[role].round.get(key)) : undefined;
-  return out;
-}
-
-async function endSend(round, game) {
-  const sends = await choices(game, "send");
+function endSend(round, game) {
+  const sends = fromRoles(game, "send");
   const sent = Object.fromEntries(ROLES.map((r) => [r, sends[r]?.sent]));
-  const msgs = resolveSends(armOf(game), await openServer(round.get("draw")), sent);
-  round.set("messages", await sealServer(msgs));
-  for (const player of game.players) await sendMessages(player, round, msgs);
+  const msgs = resolveSends(armOf(game), round.get("draw"), sent);
+  round.set("messages", msgs);
+  for (const player of game.players) {
+    // Before results, a player is shown only their own message and what was delivered to them.
+    const { sent: mine, sentAuto, fromPartner } = msgs[player.get("role")];
+    player.round.set("messages", { sent: mine, sentAuto, fromPartner });
+  }
 }
 
-// Before results, a player learns only their own message and what was delivered to them.
-async function sendMessages(player, round, msgs) {
-  const { sent, sentAuto, fromPartner } = msgs[player.get("role")];
-  player.round.set("messages", await sealFor(player, { sent, sentAuto, fromPartner }));
-}
-
-async function endShip(round, game) {
+function endShip(round, game) {
   const arm = armOf(game);
-  const draw = await openServer(round.get("draw"));
-  const sends = await choices(game, "send");
-  const ships = await choices(game, "ship");
+  const draw = round.get("draw");
+  const sends = fromRoles(game, "send");
+  const ships = fromRoles(game, "ship");
   const ship = Object.fromEntries(ROLES.map((r) => [r, ships[r]?.ship]));
-  const results = resolveShips(arm, draw, await openServer(round.get("messages")), ship);
+  const results = resolveShips(arm, draw, round.get("messages"), ship);
   const n = round.get("n");
-  round.set("outcome", draw);
 
   for (const player of game.players) {
     const role = player.get("role");
-    const view = startView(arm, draw.situation[role]);
-    const result = { n, practice: false, suggestion: view.suggestion, ...results[role] };
+    const { suggestion } = startView(arm, draw.situation[role]);
+    const result = { n, practice: false, suggestion, ...results[role] };
     player.round.set("result", result);
     player.round.set("record", roundRecord({ ...sends[role], ...ships[role], ...result }));
     const history = [...(player.get("paidRounds") || []), { n, points: result.points }];

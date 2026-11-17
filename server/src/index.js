@@ -7,17 +7,12 @@ import {
 } from "@empirica/core/admin/classic";
 import { info, setLogLevel } from "@empirica/core/console";
 import minimist from "minimist";
-import path from "path";
 import process from "process";
 import { Empirica } from "./callbacks";
-import { initVault } from "./vault";
 
 const argv = minimist(process.argv.slice(2), { string: ["token"] });
 
 setLogLevel(argv["loglevel"] || "info");
-
-// Keep the server key with Empirica's local data (.empirica/local in development).
-initVault(argv["sessionTokenPath"] ? path.dirname(argv["sessionTokenPath"]) : process.cwd());
 
 (async () => {
   const ctx = await AdminContext.init(
