@@ -1,0 +1,200 @@
+{
+  "SurveyEntry": {
+    "SurveyID": "SV_3OA25FrmW07HkEe",
+    "SurveyName": "Crate Factory (single-player)",
+    "SurveyDescription": null,
+    "SurveyOwnerID": "UR_7aN3SYUuVJMALXw",
+    "SurveyBrandID": "berkeley",
+    "DivisionID": "DV_bE4GVCKSvJJ2JYF",
+    "SurveyLanguage": "EN",
+    "SurveyActiveResponseSet": "RS_aWxtm7EBAj6yXCm",
+    "SurveyStatus": "Inactive",
+    "SurveyStartDate": "0000-00-00 00:00:00",
+    "SurveyExpirationDate": "0000-00-00 00:00:00",
+    "SurveyCreationDate": "2026-10-31 13:09:35",
+    "CreatorID": "UR_7aN3SYUuVJMALXw",
+    "LastModified": "2026-10-31 13:09:38",
+    "LastAccessed": "0000-00-00 00:00:00",
+    "LastActivated": "0000-00-00 00:00:00",
+    "Deleted": null
+  },
+  "SurveyElements": [
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "BL",
+      "PrimaryAttribute": "Survey Blocks",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": [
+        {
+          "Type": "Default",
+          "Description": "Game",
+          "ID": "BL_1EWwCdXQlYQANgy",
+          "BlockElements": [
+            {
+              "Type": "Question",
+              "QuestionID": "QID1"
+            }
+          ]
+        },
+        {
+          "Type": "Trash",
+          "Description": "Trash / Unused Questions",
+          "ID": "BL_0SMFEa82VXHViYe"
+        }
+      ]
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "FL",
+      "PrimaryAttribute": "Survey Flow",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "Flow": [
+          {
+            "ID": "BL_1EWwCdXQlYQANgy",
+            "Type": "Block",
+            "FlowID": "FL_2"
+          }
+        ],
+        "Properties": {
+          "Count": 2
+        },
+        "FlowID": "FL_1",
+        "Type": "Root"
+      }
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "PL",
+      "PrimaryAttribute": "Preview Link",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "PreviewType": "Brand",
+        "PreviewID": "b02c314c-ad74-4543-a7de-787ce82590f5"
+      }
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "PROJ",
+      "PrimaryAttribute": "CORE",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": "1.1.0",
+      "Payload": {
+        "ProjectCategory": "CORE",
+        "SchemaVersion": "1.1.0"
+      }
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "QC",
+      "PrimaryAttribute": "Survey Question Count",
+      "SecondaryAttribute": "1",
+      "TertiaryAttribute": null,
+      "Payload": null
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "RS",
+      "PrimaryAttribute": "RS_aWxtm7EBAj6yXCm",
+      "SecondaryAttribute": "Default Response Set",
+      "TertiaryAttribute": null,
+      "Payload": null
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "SCO",
+      "PrimaryAttribute": "Scoring",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "ScoringCategories": [],
+        "ScoringCategoryGroups": [],
+        "ScoringSummaryCategory": null,
+        "ScoringSummaryAfterQuestions": 0,
+        "ScoringSummaryAfterSurvey": 0,
+        "DefaultScoringCategory": null,
+        "AutoScoringCategory": null
+      }
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "SO",
+      "PrimaryAttribute": "Survey Options",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "BackButton": "false",
+        "SaveAndContinue": "true",
+        "SurveyProtection": "PublicSurvey",
+        "BallotBoxStuffingPrevention": "false",
+        "NoIndex": "Yes",
+        "SecureResponseFiles": "true",
+        "SurveyExpiration": "None",
+        "SurveyTermination": "DefaultMessage",
+        "Header": "",
+        "Footer": "",
+        "ProgressBarDisplay": "None",
+        "PartialData": "+1 week",
+        "ValidationMessage": "",
+        "PreviousButton": "",
+        "NextButton": "",
+        "SurveyTitle": "Qualtrics Survey | Qualtrics Experience Management",
+        "SkinLibrary": "berkeley",
+        "SkinType": "component",
+        "Skin": {
+          "brandingId": "7220639767",
+          "templateId": "*simple",
+          "overrides": null
+        },
+        "NewScoring": 1,
+        "SurveyMetaDescription": "The most powerful, simple and trusted way to gather experience data. Start your journey to experience management and try a free account today."
+      }
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "SQ",
+      "PrimaryAttribute": "QID1",
+      "SecondaryAttribute": "Crate Factory game",
+      "TertiaryAttribute": null,
+      "Payload": {
+        "QuestionText": "<iframe src=\"https://graceful-selkie-b95da6.netlify.app/?arm=${e://Field/arm}&amp;pid=${e://Field/ResponseID}\" style=\"width:100%;height:85vh;border:0;\" title=\"Crate Factory\"></iframe>",
+        "DataExportTag": "game",
+        "QuestionType": "DB",
+        "Selector": "TB",
+        "DataVisibility": {
+          "Private": false,
+          "Hidden": false
+        },
+        "Configuration": {
+          "QuestionDescriptionOption": "UseText"
+        },
+        "QuestionDescription": "Crate Factory game",
+        "ChoiceOrder": [],
+        "Validation": {
+          "Settings": {
+            "Type": "None"
+          }
+        },
+        "Language": [],
+        "NextChoiceId": 4,
+        "NextAnswerId": 1,
+        "QuestionID": "QID1",
+        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n  var q = this;\n  q.hideNextButton();\n  window.addEventListener(\"message\", function (e) {\n    if (!e.data || e.data.source !== \"crate-factory\") return;\n    var total = String(e.data.data.totalEarned);\n    var data = JSON.stringify(e.data.data);\n    // Classic layouts use setEmbeddedData; the New Survey Taking Experience uses setJSEmbeddedData (saved as __js_ fields).\n    try { Qualtrics.SurveyEngine.setEmbeddedData(\"cf_total\", total); Qualtrics.SurveyEngine.setEmbeddedData(\"cf_data\", data); } catch (err) {}\n    try { Qualtrics.SurveyEngine.setJSEmbeddedData(\"cf_total\", total); Qualtrics.SurveyEngine.setJSEmbeddedData(\"cf_data\", data); } catch (err) {}\n    q.showNextButton();\n    q.clickNextButton();\n  });\n});"
+      }
+    },
+    {
+      "SurveyID": "SV_3OA25FrmW07HkEe",
+      "Element": "STAT",
+      "PrimaryAttribute": "Survey Statistics",
+      "SecondaryAttribute": null,
+      "TertiaryAttribute": null,
+      "Payload": {
+        "MobileCompatible": true,
+        "ID": "Survey Statistics"
+      }
+    }
+  ]
+}

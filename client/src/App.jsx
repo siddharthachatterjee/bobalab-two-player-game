@@ -1,10 +1,13 @@
+// The 2-player game on Empirica. Intro: shared onboarding (instructions, solo
+// practice, quiz). Game: the shared round screens, wired in ./pair/.
 import { EmpiricaClassic } from "@empirica/core/player/classic";
 import { EmpiricaContext } from "@empirica/core/player/classic/react";
 import { EmpiricaMenu, EmpiricaParticipant } from "@empirica/core/player/react";
 import React from "react";
-import { Game } from "./Game";
 import { ExitSurvey } from "./intro-exit/ExitSurvey";
-import { Introduction } from "./intro-exit/Introduction";
+import { Bonus } from "./pair/Bonus";
+import { PairIntro } from "./pair/PairIntro";
+import { PairRound } from "./pair/PairRound";
 
 export default function App() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -13,21 +16,16 @@ export default function App() {
   const { protocol, host } = window.location;
   const url = `${protocol}//${host}/query`;
 
-  function introSteps({ game, player }) {
-    return [Introduction];
-  }
-
-  function exitSteps({ game, player }) {
-    return [ExitSurvey];
-  }
+  const introSteps = () => [PairIntro];
+  const exitSteps = () => [Bonus, ExitSurvey];
 
   return (
     <EmpiricaParticipant url={url} ns={playerKey} modeFunc={EmpiricaClassic}>
       <div className="h-screen relative">
         <EmpiricaMenu position="bottom-left" />
-        <div className="h-full overflow-auto">
+        <div data-scroller className="h-full overflow-auto bg-paper">
           <EmpiricaContext introSteps={introSteps} exitSteps={exitSteps}>
-            <Game />
+            <PairRound />
           </EmpiricaContext>
         </div>
       </div>

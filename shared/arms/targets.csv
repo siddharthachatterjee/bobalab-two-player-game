@@ -1,0 +1,97 @@
+block_id,situation_id,name,probability,target_low,target_high,display_order
+B019,0,Large increase,0.1,105.0,125.0,0
+B019,1,Small increase,0.4,5.0,25.0,1
+B019,2,Small decrease,0.4,-5.0,-25.0,2
+B019,3,Large decrease,0.1,-105.0,-125.0,3
+B021,0,Large increase,0.1,105.0,125.0,0
+B021,1,Small increase,0.4,5.0,25.0,1
+B021,2,Small decrease,0.4,-5.0,-25.0,2
+B021,3,Large decrease,0.1,-105.0,-125.0,3
+B022,0,Large increase,0.1,105.0,125.0,0
+B022,1,Small increase,0.4,5.0,25.0,1
+B022,2,Small decrease,0.4,-5.0,-25.0,2
+B022,3,Large decrease,0.1,-105.0,-125.0,3
+B031,0,Large increase,0.25,105.0,125.0,0
+B031,1,Small increase,0.25,5.0,25.0,1
+B031,2,Small decrease,0.25,-5.0,-25.0,2
+B031,3,Large decrease,0.25,-105.0,-125.0,3
+B038,0,Large increase,0.25,105.0,125.0,0
+B038,1,Small increase,0.25,5.0,25.0,1
+B038,2,Small decrease,0.25,-5.0,-25.0,2
+B038,3,Large decrease,0.25,-105.0,-125.0,3
+B052,0,Large increase,0.4,105.0,125.0,0
+B052,1,Small increase,0.09999999999999998,5.0,25.0,1
+B052,2,Small decrease,0.09999999999999998,-5.0,-25.0,2
+B052,3,Large decrease,0.4,-105.0,-125.0,3
+B100,0,Large increase,0.1,125.0,175.0,0
+B100,1,Small increase,0.4,25.0,75.0,1
+B100,2,Small decrease,0.4,-25.0,-75.0,2
+B100,3,Large decrease,0.1,-125.0,-175.0,3
+B108,0,Large increase,0.25,125.0,175.0,0
+B108,1,Small increase,0.25,25.0,75.0,1
+B108,2,Small decrease,0.25,-25.0,-75.0,2
+B108,3,Large decrease,0.25,-125.0,-175.0,3
+B111,0,Large increase,0.25,125.0,175.0,0
+B111,1,Small increase,0.25,25.0,75.0,1
+B111,2,Small decrease,0.25,-25.0,-75.0,2
+B111,3,Large decrease,0.25,-125.0,-175.0,3
+B119,0,Large increase,0.25,125.0,175.0,0
+B119,1,Small increase,0.25,25.0,75.0,1
+B119,2,Small decrease,0.25,-25.0,-75.0,2
+B119,3,Large decrease,0.25,-125.0,-175.0,3
+B123,0,Large increase,0.4,125.0,175.0,0
+B123,1,Small increase,0.09999999999999998,25.0,75.0,1
+B123,2,Small decrease,0.09999999999999998,-25.0,-75.0,2
+B123,3,Large decrease,0.4,-125.0,-175.0,3
+B127,0,Large increase,0.4,125.0,175.0,0
+B127,1,Small increase,0.09999999999999998,25.0,75.0,1
+B127,2,Small decrease,0.09999999999999998,-25.0,-75.0,2
+B127,3,Large decrease,0.4,-125.0,-175.0,3
+B180,0,Large increase,0.1,75.0,125.0,0
+B180,1,Increase if high,0.4,-25.0,25.0,1
+B180,2,Increase if low,0.4,25.0,-25.0,2
+B180,3,Large decrease,0.1,-75.0,-125.0,3
+B185,0,Large increase,0.25,75.0,125.0,0
+B185,1,Increase if high,0.25,-25.0,25.0,1
+B185,2,Increase if low,0.25,25.0,-25.0,2
+B185,3,Large decrease,0.25,-75.0,-125.0,3
+B197,0,Large increase,0.4,75.0,125.0,0
+B197,1,Increase if high,0.09999999999999998,-25.0,25.0,1
+B197,2,Increase if low,0.09999999999999998,25.0,-25.0,2
+B197,3,Large decrease,0.4,-75.0,-125.0,3
+B200,0,Large increase,0.4,75.0,125.0,0
+B200,1,Increase if high,0.09999999999999998,-25.0,25.0,1
+B200,2,Increase if low,0.09999999999999998,25.0,-25.0,2
+B200,3,Large decrease,0.4,-75.0,-125.0,3
+B208,0,Large increase,0.4,75.0,125.0,0
+B208,1,Increase if high,0.09999999999999998,-25.0,25.0,1
+B208,2,Increase if low,0.09999999999999998,25.0,-25.0,2
+B208,3,Large decrease,0.4,-75.0,-125.0,3
+B209,0,Large increase,0.4,75.0,125.0,0
+B209,1,Increase if high,0.09999999999999998,-25.0,25.0,1
+B209,2,Increase if low,0.09999999999999998,25.0,-25.0,2
+B209,3,Large decrease,0.4,-75.0,-125.0,3
+B251,0,Large increase,0.1,60.0,90.0,0
+B251,1,Small decrease,0.4,-40.0,-10.0,2
+B251,2,Small increase,0.4,40.0,10.0,1
+B251,3,Large decrease,0.1,-60.0,-90.0,3
+B253,0,Large increase,0.1,60.0,90.0,0
+B253,1,Small decrease,0.4,-40.0,-10.0,2
+B253,2,Small increase,0.4,40.0,10.0,1
+B253,3,Large decrease,0.1,-60.0,-90.0,3
+B254,0,Large increase,0.1,60.0,90.0,0
+B254,1,Small decrease,0.4,-40.0,-10.0,2
+B254,2,Small increase,0.4,40.0,10.0,1
+B254,3,Large decrease,0.1,-60.0,-90.0,3
+B256,0,Large increase,0.25,60.0,90.0,0
+B256,1,Small decrease,0.25,-40.0,-10.0,2
+B256,2,Small increase,0.25,40.0,10.0,1
+B256,3,Large decrease,0.25,-60.0,-90.0,3
+B262,0,Large increase,0.25,60.0,90.0,0
+B262,1,Small decrease,0.25,-40.0,-10.0,2
+B262,2,Small increase,0.25,40.0,10.0,1
+B262,3,Large decrease,0.25,-60.0,-90.0,3
+B284,0,Large increase,0.4,60.0,90.0,0
+B284,1,Small decrease,0.09999999999999998,-40.0,-10.0,2
+B284,2,Small increase,0.09999999999999998,40.0,10.0,1
+B284,3,Large decrease,0.4,-60.0,-90.0,3
