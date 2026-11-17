@@ -1,4 +1,4 @@
-// Checks the Study 1 rules against the worked example in arms/SPEC.md
+// Checks the game rules against the worked example in arms/SPEC.md
 // and checks that every arm loads. Run: node --test shared/
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -8,22 +8,28 @@ import {
   buildArm,
   expectedPoints,
   forwardingChangesAnything,
-  parseCsv,
   points,
   forwardBoth,
   playProgrammedPartner,
   suggestion,
   target,
 } from "./rules.js";
+import { CSV } from "./arms/tables.js";
+import { TABLES as tables } from "./arms/index.js";
 
-const read = (f) => parseCsv(readFileSync(new URL(`./arms/${f}.csv`, import.meta.url), "utf8"));
-const tables = {
-  arms: read("arms"),
-  targets: read("targets"),
-  messageRules: read("message_rules"),
-  forwardingRules: read("forwarding_rules"),
-  opponentShipments: read("opponent_shipments"),
+const FILES = {
+  arms: "arms.csv",
+  targets: "targets.csv",
+  messageRules: "message_rules.csv",
+  forwardingRules: "forwarding_rules.csv",
+  opponentShipments: "opponent_shipments.csv",
 };
+
+test("shared/arms/tables.js matches the CSVs (else run node scripts/build-arms.mjs)", () => {
+  for (const [k, f] of Object.entries(FILES)) {
+    assert.equal(CSV[k], readFileSync(new URL(`./arms/${f}`, import.meta.url), "utf8"), f);
+  }
+});
 
 test("every arm loads and its targets follow the formula", () => {
   const ids = armIds(tables);

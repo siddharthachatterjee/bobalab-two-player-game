@@ -17,6 +17,7 @@ import {
   Section,
   SituationTable,
   forwardingLabel,
+  scrollToTop,
 } from "./parts";
 import { useGame, useRoles } from "./context";
 
@@ -42,6 +43,12 @@ function Overview({ arm, onPoints }) {
   return (
     <>
       <H1>Run the {roles.youPlant}</H1>
+      {roles.partnerKind === "person" && (
+        <P strong>
+          You'll be paired with another participant and assigned the North or South plant at random. Both plants play by
+          the same rules; these instructions show the North plant.
+        </P>
+      )}
       <Box label="The game in one line">
         You and the {roles.partnerPlant} each choose how many more or fewer crates to ship than normal. You score more when you ship
         close to your own target and close to the {roles.partnerPlant}.
@@ -100,6 +107,7 @@ function Rules({ arm, onPoints }) {
           It gets its own situation the same way you do, sends a message through the same mediator, and chooses its
           shipment after reading the message delivered to it. It does not see your targets or your shipment until the
           results.
+          {roles.partnerKind === "person" && " In the practice rounds, the other plant is run by a computer program."}
         </P>
       </div>
       <div className="space-y-3">
@@ -147,9 +155,7 @@ export function Instructions({ arm, onDone }) {
     { kicker: "This session's rules", body: <Rules arm={arm} onPoints={() => setPoints(true)} /> },
   ];
   const last = page === pages.length - 1;
-  useEffect(() => {
-    document.querySelector("[data-scroller]")?.scrollTo(0, 0);
-  }, [page]);
+  useEffect(scrollToTop, [page]);
   return (
     <>
       <Page width="max-w-3xl">

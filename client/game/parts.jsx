@@ -7,6 +7,11 @@ import { MARKETS, formatCoef, formatCrates, formatPoints, pct, situationName } f
 
 // ---------------------------------------------------------------- layout
 
+// Scrolls the app's scrolling container (marked data-scroller) back to the top.
+export function scrollToTop() {
+  document.querySelector("[data-scroller]")?.scrollTo(0, 0);
+}
+
 export function Page({ children, width = "max-w-4xl" }) {
   return <div className={`w-full ${width} mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-10 anim-fade-up`}>{children}</div>;
 }
@@ -101,7 +106,7 @@ export function TopBar({ children, right = null }) {
 const STEPS = { send: "Send", ship: "Read & ship", results: "Results" };
 
 export function RoundHeader({ round, step }) {
-  const { session } = useGame();
+  const { session, roles } = useGame();
   const where = round.practice ? `Practice ${round.n} of ${session.practice}` : `Round ${round.n} of ${session.paid}`;
   const keys = Object.keys(STEPS);
   const at = keys.indexOf(step);
@@ -125,6 +130,8 @@ export function RoundHeader({ round, step }) {
         </ol>
       }
     >
+      <span className="font-medium">{roles.youPlant}</span>
+      <span className="text-faint">·</span>
       <span className="font-medium">{where}</span>
       {round.practice && <span className="hidden sm:inline text-muted">· not paid</span>}
     </TopBar>

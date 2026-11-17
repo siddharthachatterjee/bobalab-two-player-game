@@ -1,166 +1,167 @@
+// The 2-player game on Empirica. The rules live in shared/ (rules.js, pair.js);
+// this file only moves values between Empirica attributes and those functions.
+//
+// Privacy: Empirica sends every attribute in a game to both players, so values
+// a player must not see yet are sealed (shared/secure.js, ./vault.js): to one
+// player ("for N/S"), or to the server only. Once a round is scored nothing in
+// it is secret, so its data row and outcome are stored in plain text for export.
+//
+//   round.draw               market + both situations       sealed, server
+//   round.messages           both sides' messages            sealed, server
+//   round.outcome            market + both situations       plain, after scoring
+//   player.round.view        { n, situation, suggestion }    sealed, for player
+//   player.round.send        { sent, secSend, ... }          sealed by client, for server
+//   player.round.messages    { sent, sentAuto, fromPartner } sealed, for player
+//   player.round.ship        { ship, guess, ... }            sealed by client, for server
+//   player.round.result      the scored round, both sides    plain, after scoring
+//   player.round.record      the data row (shared/record.js) plain, after scoring
+//   player.round.done        true when they leave results    plain, client
 import { ClassicListenersCollector } from "@empirica/core/admin/classic";
+import { loadArm } from "../../shared/arms/index.js";
 import {
-  GAME,
-  PARAMS,
-  ROLE_KEYS,
-  clampAction,
-  firmLoss,
-  forecastSignal,
-  ownTarget,
-  firmTarget,
-  messageAim,
-  otherRole,
-  recommendedRule,
-  toPoints,
-  workerLoss,
-} from "../../shared/model.js";
+  PAIR_SESSION,
+  ROLES,
+  drawPairRound,
+  nextTimeouts,
+  resolveSends,
+  resolveShips,
+  startView,
+} from "../../shared/pair.js";
+import { roundRecord } from "../../shared/record.js";
+import { openFrom, openServer, sealFor, sealServer, serverPublicKey } from "./vault";
+
 export const Empirica = new ClassicListenersCollector();
 
-// True demand stays in server memory, off every attribute clients can read,
-// until the shift results. If the server restarts mid-shift it falls back to
-// the forecast mean.
-const hiddenDemand = new Map(); // `${round.id}:${day}` -> theta
-
-const coin = () => (Math.random() < 0.5 ? 1 : -1);
-const drawDemand = () => PARAMS.thetaL + Math.random() * (PARAMS.thetaH - PARAMS.thetaL);
+const armOf = (game) => loadArm(game.get("armId"));
+const byRole = (game) => Object.fromEntries(game.players.map((p) => [p.get("role"), p]));
+const report = (where) => (err) => console.error(`[crate-factory] ${where}:`, err);
 
 Empirica.onGameStart(({ game }) => {
-  const roles = Math.random() < 0.5 ? ROLE_KEYS : [...ROLE_KEYS].reverse();
+  const { arm: armId } = game.get("treatment");
+  loadArm(armId); // throws early on a bad treatment
+  game.set("armId", armId);
+  serverPublicKey().then((k) => game.set("serverKey", k), report("serverKey"));
+
+  const roles = Math.random() < 0.5 ? ROLES : [...ROLES].reverse();
   game.players.forEach((player, i) => {
     player.set("role", roles[i % 2]);
-    player.set("coins", 0);
+    player.set("timeouts", 0);
   });
-  game.set("teamStars", 0);
 
-  for (let s = 1; s <= GAME.shifts; s++) {
-    const round = game.addRound({ name: `Day ${s}`, shift: s });
-    for (let day = 1; day <= GAME.daysPerShift; day++) {
-      round.addStage({ name: `Day ${day} · Message`, step: "message", day, duration: GAME.seconds.message });
-      round.addStage({ name: `Day ${day} · Decide`, step: "decide", day, duration: GAME.seconds.decide });
-    }
-    round.addStage({ name: "Shift results", step: "results", duration: GAME.seconds.results });
+  const { paid, seconds } = PAIR_SESSION;
+  for (let n = 1; n <= paid; n++) {
+    const round = game.addRound({ name: `Round ${n}`, n });
+    round.addStage({ name: "Send", step: "send", duration: seconds.send });
+    round.addStage({ name: "Ship", step: "ship", duration: seconds.ship });
+    round.addStage({ name: "Results", step: "results", duration: seconds.results });
   }
 });
 
-// Bonus types are persistent within a shift (one two-period task, Sec 6).
 Empirica.onRoundStart(({ round }) => {
-  for (const player of round.currentGame.players) {
-    player.round.set("type", coin());
-  }
+  startRound(round).catch(report("round start"));
 });
 
+async function startRound(round) {
+  const game = round.currentGame;
+  const draw = drawPairRound(armOf(game));
+  round.set("draw", await sealServer(draw));
+  for (const player of game.players) await sendView(player, round, draw);
+}
+
+async function sendView(player, round, draw) {
+  const view = { n: round.get("n"), ...startView(armOf(round.currentGame), draw.situation[player.get("role")]) };
+  player.round.set("view", await sealFor(player, view));
+}
+
+// If a browser lost its key and published a new one, re-seal what it should see now.
+Empirica.on("player", "pubKey", (ctx, { player }) => {
+  const round = player.currentRound;
+  if (!round?.get("draw") || !player.get("role")) return;
+  (async () => {
+    await sendView(player, round, await openServer(round.get("draw")));
+    if (round.get("messages")) await sendMessages(player, round, await openServer(round.get("messages")));
+  })().catch(report("reseal"));
+});
+
+// A player who has dropped out is played by the program: submit for them at once.
 Empirica.onStageStart(({ stage }) => {
-  if (stage.get("step") === "message") startDay(stage);
+  for (const player of stage.currentGame.players) {
+    if (player.get("dropped")) player.stage.set("submit", true);
+  }
 });
 
 Empirica.onStageEnded(({ stage }) => {
+  const game = stage.currentGame;
   const step = stage.get("step");
-  if (step === "message") relayMessages(stage);
-  if (step === "decide") lockActions(stage);
-  if (step === "decide" && stage.get("day") === GAME.daysPerShift) scoreShift(stage);
+  trackTimeouts(game, step);
+  if (step === "send") endSend(stage.round, game).catch(report("send"));
+  if (step === "ship") endShip(stage.round, game).catch(report("ship"));
 });
 
-Empirica.onRoundEnded(({ round }) => {
-  for (let day = 1; day <= GAME.daysPerShift; day++) hiddenDemand.delete(`${round.id}:${day}`);
-});
+// Each player's sealed choices, opened; missing ones stay undefined.
+async function choices(game, key) {
+  const players = byRole(game);
+  const out = {};
+  for (const role of ROLES) out[role] = players[role] ? await openFrom(players[role], players[role].round.get(key)) : undefined;
+  return out;
+}
 
-Empirica.onGameEnded(({ game }) => {});
+async function endSend(round, game) {
+  const sends = await choices(game, "send");
+  const sent = Object.fromEntries(ROLES.map((r) => [r, sends[r]?.sent]));
+  const msgs = resolveSends(armOf(game), await openServer(round.get("draw")), sent);
+  round.set("messages", await sealServer(msgs));
+  for (const player of game.players) await sendMessages(player, round, msgs);
+}
 
-// AI observes demand and sends its committed public signal;
-// each player privately learns today's local condition.
-function startDay(stage) {
-  const round = stage.round;
-  const day = stage.get("day");
-  const { disclosure } = round.currentGame.get("treatment");
-  const g = PARAMS.gamma;
+// Before results, a player learns only their own message and what was delivered to them.
+async function sendMessages(player, round, msgs) {
+  const { sent, sentAuto, fromPartner } = msgs[player.get("role")];
+  player.round.set("messages", await sealFor(player, { sent, sentAuto, fromPartner }));
+}
 
-  const theta = drawDemand();
-  hiddenDemand.set(`${round.id}:${day}`, theta);
+async function endShip(round, game) {
+  const arm = armOf(game);
+  const draw = await openServer(round.get("draw"));
+  const sends = await choices(game, "send");
+  const ships = await choices(game, "ship");
+  const ship = Object.fromEntries(ROLES.map((r) => [r, ships[r]?.ship]));
+  const results = resolveShips(arm, draw, await openServer(round.get("messages")), ship);
+  const n = round.get("n");
+  round.set("outcome", draw);
 
-  const signal = forecastSignal(disclosure, theta, g);
-  round.set(`forecast${day}`, signal);
-  round.set(`rule${day}`, recommendedRule(signal.mean, g));
-
-  for (const player of round.currentGame.players) {
-    player.round.set(`X${day}`, coin());
+  for (const player of game.players) {
+    const role = player.get("role");
+    const view = startView(arm, draw.situation[role]);
+    const result = { n, practice: false, suggestion: view.suggestion, ...results[role] };
+    player.round.set("result", result);
+    player.round.set("record", roundRecord({ ...sends[role], ...ships[role], ...result }));
+    const history = [...(player.get("paidRounds") || []), { n, points: result.points }];
+    player.set("paidRounds", history);
+    if (n === PAIR_SESSION.paid) setBonus(player, history);
   }
 }
 
-// The AI forwards both replies unchanged (baseline protocol, Sec 2.2).
-function relayMessages(stage) {
-  const round = stage.round;
-  const day = stage.get("day");
-  const messages = {};
-  for (const player of round.currentGame.players) {
-    const msg = player.round.get(`msg${day}`);
-    if (msg === undefined) player.round.set(`msgTimedOut${day}`, true);
-    messages[player.get("role")] = msg ?? null;
-  }
-  round.set(`messages${day}`, messages);
+// One paid round is picked at random for the bonus.
+function setBonus(player, history) {
+  const pick = history[Math.floor(Math.random() * history.length)];
+  player.set("bonus", {
+    round: pick.n,
+    points: Number(pick.points.toFixed(2)),
+    dollars: Number((pick.points * PAIR_SESSION.dollarsPerPoint).toFixed(2)),
+  });
 }
 
-function lockActions(stage) {
-  const round = stage.round;
-  const day = stage.get("day");
-  const mu = round.get(`forecast${day}`).mean;
-  const messages = round.get(`messages${day}`) || {};
-  for (const player of round.currentGame.players) {
-    // Guess about the partner's call. Untouched guesses keep the on-screen default.
-    if (player.round.get(`guess${day}`) === undefined) {
-      const partnerMsg = messages[otherRole(player.get("role"))];
-      player.round.set(`guess${day}`, partnerMsg ? messageAim(partnerMsg, mu) : 0);
-      player.round.set(`guessUntouched${day}`, true);
-    }
+// What the client writes when a player finishes each stage.
+const STAGE_OUTPUT = { send: "send", ship: "ship", results: "done" };
 
-    const a = player.round.get(`action${day}`);
-    if (a === undefined) {
-      player.round.set(`action${day}`, 0);
-      player.round.set(`actionTimedOut${day}`, true);
-    } else {
-      player.round.set(`action${day}`, clampAction(a));
-    }
+// After enough missed stages in a row, the program plays for that player.
+function trackTimeouts(game, step) {
+  for (const player of game.players) {
+    if (player.get("dropped")) continue;
+    const submitted = player.round.get(STAGE_OUTPUT[step]) !== undefined;
+    const count = nextTimeouts(player.get("timeouts") || 0, submitted);
+    player.set("timeouts", count);
+    if (count >= PAIR_SESSION.dropAfter) player.set("dropped", true);
   }
-}
-
-// No feedback between the two days (Sec 6): everything is revealed at shift end.
-function scoreShift(stage) {
-  const round = stage.round;
-  const game = round.currentGame;
-  const g = PARAMS.gamma;
-  const players = game.players;
-  const days = [];
-
-  for (let day = 1; day <= GAME.daysPerShift; day++) {
-    const theta = hiddenDemand.get(`${round.id}:${day}`) ?? round.get(`forecast${day}`).mean;
-    const rows = players.map((p) => ({
-      p,
-      role: p.get("role"),
-      T: p.round.get("type"),
-      X: p.round.get(`X${day}`),
-      a: p.round.get(`action${day}`) ?? 0,
-      msg: p.round.get(`msg${day}`) ?? null,
-    }));
-    const [r1, r2 = r1] = rows;
-    const stars = toPoints(firmLoss({ a1: r1.a, a2: r2.a, theta, X1: r1.X, X2: r2.X, gamma: g }));
-
-    const byRole = {};
-    for (const r of rows) {
-      const partner = rows.find((o) => o !== r) ?? r;
-      const coins = toPoints(workerLoss({ a: r.a, aPartner: partner.a, theta, T: r.T, X: r.X, gamma: g }));
-      byRole[r.role] = {
-        T: r.T,
-        X: r.X,
-        msg: r.msg,
-        action: r.a,
-        target: ownTarget(theta, r.T, r.X),
-        firmTarget: firmTarget(theta, r.X),
-        coins,
-      };
-      r.p.set("coins", (r.p.get("coins") || 0) + coins);
-    }
-    game.set("teamStars", (game.get("teamStars") || 0) + stars);
-    days.push({ day, theta, stars, players: byRole });
-  }
-
-  round.set("results", days);
 }
