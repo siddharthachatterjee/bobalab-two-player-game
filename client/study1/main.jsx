@@ -2,7 +2,8 @@
 // plant, as a static page for Qualtrics. Rules: shared/rules.js and shared/arms/.
 // Screens: client/game/ (shared with the 2-player version).
 // URL parameters:
-//   arm         an arm_id from arms.csv, e.g. B019_selective_R1; random if missing or unknown
+//   arm         an arm_id from arms.csv, e.g. B019_selective_R1; if missing or unknown,
+//               a random arm from the active blocks (shared/arms/active.js)
 //   pid         participant id, echoed back in the data
 //   return      URL to send the participant to when done, with results appended
 //   researcher  1 = open the researcher page (arm browser and preview links)
@@ -11,9 +12,9 @@ import { createRoot } from "react-dom/client";
 import "@unocss/reset/tailwind-compat.css";
 import "virtual:uno.css";
 import "../src/index.css";
-import { ARM_IDS, TABLES, loadArm } from "../../shared/arms/index.js";
+import { ACTIVE_ARM_IDS, ARM_IDS, TABLES, loadArm } from "../../shared/arms/index.js";
 import { armSummary, roundNumbers, roundRecord } from "../../shared/record.js";
-import { formatDollars, formatPoints } from "../../shared/rules.js";
+import { bonusDollars, formatCost, formatDollars } from "../../shared/rules.js";
 import { GameContext, makeRoles } from "../game/context";
 import { Attention, Note } from "../game/instructions";
 import { Onboarding } from "../game/onboarding";
@@ -21,9 +22,9 @@ import { Button, H2, Kicker, P, Page, scrollToTop } from "../game/parts";
 import { SoloRound, makeSoloRound } from "../game/solo";
 import { Researcher } from "./researcher";
 
-// Session shape. One paid round is picked at random for the bonus; points sit
-// mostly in 95-100 at c = 0.0008, so the rate is a placeholder.
-const SESSION = { practice: 2, paid: 8, dollarsPerPoint: 0.02 };
+// Session shape. One paid round is picked at random; the bonus is pay.max dollars
+// minus pay.perCost per unit of its cost (placeholder rates, same as the 2-player game).
+const SESSION = { practice: 2, paid: 8, pay: { max: 2, perCost: 0.02 } };
 const ATTENTION_AFTER = [4]; // attention check after these paid rounds
 const GAME = { roles: makeRoles("north", "program"), session: SESSION };
 
@@ -32,7 +33,7 @@ const pickRandom = (list) => list[Math.floor(Math.random() * list.length)];
 
 const armParam = params.get("arm");
 const settings = {
-  armId: ARM_IDS.includes(armParam) ? armParam : pickRandom(ARM_IDS),
+  armId: ARM_IDS.includes(armParam) ? armParam : pickRandom(ACTIVE_ARM_IDS),
   armRandom: !ARM_IDS.includes(armParam),
   pid: params.get("pid") || "",
   returnUrl: params.get("return"),
@@ -58,7 +59,7 @@ function App() {
     const pick = screenedOut ? null : pickRandom(paid);
     const data = {
       game: "crate-factory-study1",
-      version: 3,
+      version: 4,
       role: GAME.roles.me,
       pid: settings.pid,
       armId: arm.id,
@@ -71,8 +72,8 @@ function App() {
       attention: log.current.attention,
       rounds: [...log.current.practice, ...paid].map(roundRecord),
       paidRound: pick?.n ?? null,
-      totalEarned: pick ? Number(pick.points.toFixed(2)) : 0,
-      bonusDollars: pick ? Number((pick.points * SESSION.dollarsPerPoint).toFixed(2)) : 0,
+      paidCost: pick ? Number(pick.cost.toFixed(2)) : null,
+      bonusDollars: pick ? Number(bonusDollars(SESSION.pay, pick.cost).toFixed(2)) : 0,
     };
     setResult(roundNumbers(data));
     setPhase("done");
@@ -141,7 +142,7 @@ function Done({ data }) {
     if (embedded) window.parent.postMessage({ source: "crate-factory", data }, "*");
     if (returnUrl) {
       const url = new URL(returnUrl);
-      url.searchParams.set("cf_total", data.totalEarned);
+      url.searchParams.set("cf_total", data.bonusDollars);
       url.searchParams.set("cf_screened", data.screenedOut ? 1 : 0);
       url.searchParams.set("cf_data", JSON.stringify(data));
       window.location.assign(url.toString());
@@ -168,7 +169,7 @@ function Done({ data }) {
         <div>
           <Kicker>All done</Kicker>
           <H2>
-            Round {data.paidRound} was picked: {formatPoints(data.totalEarned)} points = {formatDollars(data.bonusDollars)}
+            Round {data.paidRound} was picked: cost {formatCost(data.paidCost)}, bonus {formatDollars(data.bonusDollars)}
           </H2>
           <P className="mt-2">Thanks for playing.</P>
         </div>

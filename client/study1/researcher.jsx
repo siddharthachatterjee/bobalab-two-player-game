@@ -2,7 +2,9 @@
 // a player preview of any of them. Parameters are not editable here: South's
 // shipments are precomputed for each arm, so changing a number would make them stale.
 import React, { useMemo, useState } from "react";
+import { ACTIVE_BLOCKS } from "../../shared/arms/active.js";
 import {
+  COST_SCALE,
   armIds,
   buildArm,
   forwardingChangesAnything,
@@ -22,7 +24,7 @@ const Field = ({ label, value }) => (
 export function Researcher({ tables }) {
   const ids = useMemo(() => armIds(tables), [tables]);
   const blocks = useMemo(() => [...new Set(tables.arms.map((a) => a.block_id))], [tables]);
-  const [block, setBlock] = useState(blocks[0]);
+  const [block, setBlock] = useState(ACTIVE_BLOCKS[0]);
   const [forwarding, setForwarding] = useState("selective");
   const [recommend, setRecommend] = useState(true);
   const id = `${block}_${forwarding}_R${recommend ? 1 : 0}`;
@@ -36,14 +38,18 @@ export function Researcher({ tables }) {
         <H1>Experiment configuration</H1>
         <P>
           Pick an arm from the supplied tables ({ids.length} arms in {blocks.length} blocks). Everything below is read
-          from <code>shared/arms/</code>. In Qualtrics, set the <code>arm</code> embedded data field to the arm ID.
+          from <code>shared/arms/</code>. In Qualtrics, set the <code>arm</code> embedded data field to the arm ID. Blocks
+          in use now (<code>shared/arms/active.js</code>): {ACTIVE_BLOCKS.join(", ")}.
         </P>
         <div className="flex flex-wrap items-end gap-6">
           <label className="space-y-1">
             <div className="text-[13px] text-muted">Block</div>
             <select value={block} onChange={(e) => setBlock(e.target.value)} className="h-11 rounded-md border border-ink/30 bg-surface px-3 text-[16px]">
               {blocks.map((b) => (
-                <option key={b}>{b}</option>
+                <option key={b} value={b}>
+                  {b}
+                  {ACTIVE_BLOCKS.includes(b) ? " (in use)" : ""}
+                </option>
               ))}
             </select>
           </label>
@@ -91,9 +97,9 @@ export function Researcher({ tables }) {
                 <Field label="Shipment bounds" value={`${arm.min} … ${arm.max}`} />
               </div>
               <div>
-                <Section>Points</Section>
-                <Field label="Starting points B" value={arm.base} />
-                <Field label="Loss scale c" value={arm.c} />
+                <Section>Cost</Section>
+                <Field label="Shown cost = loss ÷" value={COST_SCALE} />
+                <Field label="Spec points: B, c" value={`${arm.base}, ${arm.c}`} />
                 <Field label="Coordination weight γ" value={arm.gamma} />
               </div>
             </div>

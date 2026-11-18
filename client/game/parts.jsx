@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { RoleIcon } from "../src/components/Icons";
 import { useGame, useRoles } from "./context";
-import { MARKETS, formatCoef, formatCrates, formatPoints, pct, situationName } from "../../shared/rules.js";
+import { MARKETS, formatCoef, formatCost, formatCrates, partnerCost, pct, situationName, targetCost } from "../../shared/rules.js";
 
 // ---------------------------------------------------------------- layout
 
@@ -288,17 +288,15 @@ export function ForwardingModal({ arm, onClose, closeLabel }) {
   );
 }
 
-// "How points work": the formula with this arm's numbers and an example.
-export function PointsModal({ arm, onClose }) {
+// "How cost works": the formula with this arm's numbers and an example.
+export function CostModal({ arm, onClose }) {
   const roles = useRoles();
-  const kT = arm.c * (1 - arm.gamma);
-  const kS = arm.c * arm.gamma;
   const ex = { target: 20, ship: 40, partner: 60 };
-  const lossT = kT * (ex.ship - ex.target) ** 2;
-  const lossS = kS * (ex.ship - ex.partner) ** 2;
+  const costT = targetCost(arm, ex.ship, ex.target);
+  const costS = partnerCost(arm, ex.ship, ex.partner);
   return (
-    <Modal title="How points work" onClose={onClose}>
-      <P strong>Start with {arm.base} points each round. Two gaps reduce your points.</P>
+    <Modal title="How cost works" onClose={onClose}>
+      <P strong>Each round has a shipping cost. Two gaps add to it. Lower is better.</P>
       <div className="grid gap-4 sm:grid-cols-2">
         <Box>
           <div className="font-semibold">1. Distance from your target</div>
@@ -309,28 +307,36 @@ export function PointsModal({ arm, onClose }) {
           The two actual shipments decide this gap.
         </Box>
       </div>
-      <Box>
-        <div className="font-mono text-[14px] sm:text-[15px] leading-7 text-ink">
-          Points = {arm.base}
-          <br />− {formatCoef(kT)} × (your shipment − your target)²
-          <br />− {formatCoef(kS)} × (your shipment − {roles.partner}'s shipment)²
-        </div>
-      </Box>
+      <CostFormula arm={arm} />
       <Box label="Example">
         Your target is +{ex.target}, you ship +{ex.ship}, and {roles.partner} ships +{ex.partner}.
         <div className="mt-2 font-mono text-[14px] leading-7">
-          {ex.ship - ex.target} crates from your target: −{formatPoints(lossT)} points
+          {ex.ship - ex.target} crates from your target: {formatCost(costT)}
           <br />
-          {ex.partner - ex.ship} crates from {roles.partner}: −{formatPoints(lossS)} points
+          {ex.partner - ex.ship} crates from {roles.partner}: {formatCost(costS)}
           <br />
-          Total: {arm.base} − {formatPoints(lossT)} − {formatPoints(lossS)} = {formatPoints(arm.base - lossT - lossS)} points
+          Cost: {formatCost(costT)} + {formatCost(costS)} = {formatCost(costT + costS)}
         </div>
       </Box>
       <ul className="space-y-1 text-[14px] text-muted list-disc pl-5">
         <li>The preview before you ship uses the market chances and your estimate of {roles.partner}'s shipment.</li>
-        <li>Final points use the actual market and the actual shipments.</li>
+        <li>The final cost uses the actual market and the actual shipments.</li>
         <li>The message you send does not change your targets.</li>
       </ul>
     </Modal>
+  );
+}
+
+// The cost formula with this arm's weights (gaps measured in tens of crates).
+export function CostFormula({ arm }) {
+  const roles = useRoles();
+  return (
+    <Box>
+      <div className="font-mono text-[14px] sm:text-[15px] leading-7 text-ink">
+        Cost = {formatCoef(1 - arm.gamma)} × (your shipment − your target)² ÷ 100
+        <br />
+        <span className="invisible">Cost </span>+ {formatCoef(arm.gamma)} × (your shipment − {roles.partner}'s shipment)² ÷ 100
+      </div>
+    </Box>
   );
 }

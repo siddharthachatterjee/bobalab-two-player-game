@@ -7,6 +7,7 @@ import {
   drawMarket,
   drawSituation,
   forwardMessage,
+  cost,
   points,
   programmedMessage,
   programmedShipment,
@@ -21,7 +22,7 @@ export const otherRole = (role) => (role === "north" ? "south" : "north");
 export const PAIR_SESSION = {
   practice: 2, // solo rounds against the program, during the intro
   paid: 8,
-  dollarsPerPoint: 0.02, // one paid round picked at random; placeholder rate
+  pay: { max: 2, perCost: 0.02 }, // one paid round picked at random: $max − perCost × its cost; placeholder
   seconds: { send: 120, ship: 180, results: 60 },
   dropAfter: 2, // consecutive timed-out stages before the program takes over for the rest of the game
 };
@@ -81,6 +82,7 @@ export function resolveShips(arm, draw, msgs, ship) {
       ...final[role],
       partnerShip: final[other].ship,
       target: d,
+      cost: cost(arm, final[role].ship, d, final[other].ship),
       points: points(arm, final[role].ship, d, final[other].ship),
     };
   }

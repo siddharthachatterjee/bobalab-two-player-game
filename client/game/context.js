@@ -21,8 +21,8 @@ export function makeRoles(me = "north", partnerKind = "program") {
   };
 }
 
-// rounds: how many practice and paid rounds. dollarsPerPoint: bonus rate for one random paid round.
-export const DEFAULT_SESSION = { practice: 2, paid: 8, dollarsPerPoint: 0.02 };
+// practice/paid: round counts. pay: one random paid round pays pay.max − pay.perCost × its cost (see shared/rules.js bonusDollars).
+export const DEFAULT_SESSION = { practice: 2, paid: 8, pay: { max: 2, perCost: 0.02 } };
 
 export const GameContext = createContext({ roles: makeRoles(), session: DEFAULT_SESSION });
 export const useGame = () => useContext(GameContext);

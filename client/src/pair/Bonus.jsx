@@ -2,7 +2,7 @@
 // participant arrived with ?return=<url> (e.g. from Qualtrics).
 import { usePlayer } from "@empirica/core/player/classic/react";
 import React from "react";
-import { formatDollars, formatPoints } from "../../../shared/rules.js";
+import { formatCost, formatDollars } from "../../../shared/rules.js";
 import { Button, H2, Kicker, P, Page } from "../../game/parts";
 
 export function Bonus({ next }) {
@@ -13,7 +13,7 @@ export function Bonus({ next }) {
   const toSurvey = () => {
     const url = new URL(returnUrl);
     url.searchParams.set("cf_player", player.id);
-    url.searchParams.set("cf_total", bonus?.points ?? 0);
+    url.searchParams.set("cf_total", bonus?.dollars ?? 0);
     window.location.assign(url.toString());
   };
 
@@ -23,7 +23,7 @@ export function Bonus({ next }) {
         <Kicker>All done</Kicker>
         {bonus ? (
           <H2>
-            Round {bonus.round} was picked: {formatPoints(bonus.points)} points = {formatDollars(bonus.dollars)}
+            Round {bonus.round} was picked: cost {formatCost(bonus.cost)}, bonus {formatDollars(bonus.dollars)}
           </H2>
         ) : (
           <H2>The game ended early</H2>

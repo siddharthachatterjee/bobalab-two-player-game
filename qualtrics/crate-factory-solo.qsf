@@ -182,7 +182,7 @@
         "NextChoiceId": 4,
         "NextAnswerId": 1,
         "QuestionID": "QID1",
-        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n  var q = this;\n  q.hideNextButton();\n  window.addEventListener(\"message\", function (e) {\n    if (!e.data || e.data.source !== \"crate-factory\") return;\n    var total = String(e.data.data.totalEarned);\n    var data = JSON.stringify(e.data.data);\n    // Classic layouts use setEmbeddedData; the New Survey Taking Experience uses setJSEmbeddedData (saved as __js_ fields).\n    try { Qualtrics.SurveyEngine.setEmbeddedData(\"cf_total\", total); Qualtrics.SurveyEngine.setEmbeddedData(\"cf_data\", data); } catch (err) {}\n    try { Qualtrics.SurveyEngine.setJSEmbeddedData(\"cf_total\", total); Qualtrics.SurveyEngine.setJSEmbeddedData(\"cf_data\", data); } catch (err) {}\n    q.showNextButton();\n    q.clickNextButton();\n  });\n});"
+        "QuestionJS": "Qualtrics.SurveyEngine.addOnload(function () {\n  var q = this;\n  q.hideNextButton();\n  window.addEventListener(\"message\", function (e) {\n    if (!e.data || e.data.source !== \"crate-factory\") return;\n    var total = String(e.data.data.bonusDollars);\n    var data = JSON.stringify(e.data.data);\n    // Classic layouts use setEmbeddedData; the New Survey Taking Experience uses setJSEmbeddedData (saved as __js_ fields).\n    try { Qualtrics.SurveyEngine.setEmbeddedData(\"cf_total\", total); Qualtrics.SurveyEngine.setEmbeddedData(\"cf_data\", data); } catch (err) {}\n    try { Qualtrics.SurveyEngine.setJSEmbeddedData(\"cf_total\", total); Qualtrics.SurveyEngine.setJSEmbeddedData(\"cf_data\", data); } catch (err) {}\n    q.showNextButton();\n    q.clickNextButton();\n  });\n});"
       }
     },
     {

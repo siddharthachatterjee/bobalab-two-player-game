@@ -94,3 +94,21 @@ test("forwardBoth applies the same rule in both directions", () => {
   assert.deepEqual(forwardBoth(arm, "low", 1, 0), { toPartner: 1, fromPartner: 1 });
   assert.deepEqual(forwardBoth(arm, "high", 1, 2), { toPartner: 0, fromPartner: 3 });
 });
+
+test("shown cost ranks choices like the spec's points", async () => {
+  const { loadArm } = await import("./arms/index.js");
+  const { cost, expectedCost, expectedPoints, COST_SCALE } = await import("./rules.js");
+  const arm = loadArm("B185_selective_R1");
+  for (const [a, d, p] of [[35, 25, 85], [-100, 75, 0], [0, 0, 0]]) {
+    const k = arm.c * COST_SCALE;
+    assert.ok(Math.abs(points(arm, a, d, p) - (arm.base - k * cost(arm, a, d, p))) < 1e-9);
+  }
+  assert.ok(Math.abs(expectedCost(arm, 10, 1, 20) - (arm.base - expectedPoints(arm, 10, 1, 20)) / (arm.c * COST_SCALE)) < 1e-9);
+  assert.ok(Math.abs(cost(arm, 40, 20, 40) - 1.2) < 1e-9); // 20 crates off target at weight 1 − γ = 0.3
+});
+
+test("active arms are the pilot blocks", async () => {
+  const { ACTIVE_ARM_IDS } = await import("./arms/index.js");
+  assert.equal(ACTIVE_ARM_IDS.length, 8);
+  assert.ok(ACTIVE_ARM_IDS.every((id) => /^B(019|185)_/.test(id)));
+});

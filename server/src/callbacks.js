@@ -25,6 +25,7 @@ import {
   startView,
 } from "../../shared/pair.js";
 import { roundRecord } from "../../shared/record.js";
+import { bonusDollars } from "../../shared/rules.js";
 
 export const Empirica = new ClassicListenersCollector();
 
@@ -109,7 +110,7 @@ function endShip(round, game) {
     const result = { n, practice: false, suggestion, ...results[role] };
     player.round.set("result", result);
     player.round.set("record", roundRecord({ ...sends[role], ...ships[role], ...result }));
-    const history = [...(player.get("paidRounds") || []), { n, points: result.points }];
+    const history = [...(player.get("paidRounds") || []), { n, cost: result.cost }];
     player.set("paidRounds", history);
     if (n === PAIR_SESSION.paid) setBonus(player, history);
   }
@@ -120,8 +121,8 @@ function setBonus(player, history) {
   const pick = history[Math.floor(Math.random() * history.length)];
   player.set("bonus", {
     round: pick.n,
-    points: Number(pick.points.toFixed(2)),
-    dollars: Number((pick.points * PAIR_SESSION.dollarsPerPoint).toFixed(2)),
+    cost: Number(pick.cost.toFixed(2)),
+    dollars: Number(bonusDollars(PAIR_SESSION.pay, pick.cost).toFixed(2)),
   });
 }
 

@@ -5,13 +5,13 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   MARKET_NAMES,
   clampShip,
-  expectedPoints,
+  expectedCost,
+  formatCost,
   formatCrates,
-  formatPoints,
-  partnerLoss,
+  partnerCost,
   pct,
   situationName,
-  targetLoss,
+  targetCost,
 } from "../../shared/rules.js";
 import {
   Box,
@@ -20,7 +20,7 @@ import {
   H1,
   LinkButton,
   P,
-  PointsModal,
+  CostModal,
   Section,
   SituationTable,
   Targets,
@@ -36,7 +36,7 @@ const dist = (a, b) => Number(Math.abs(a - b).toFixed(1));
 // Counts how often each help modal is opened, for the data.
 function useHelp() {
   const [open, setOpen] = useState(null);
-  const counts = useRef({ forwarding: 0, points: 0 });
+  const counts = useRef({ forwarding: 0, cost: 0 });
   const show = (k) => {
     counts.current[k] += 1;
     setOpen(k);
@@ -46,7 +46,7 @@ function useHelp() {
 
 function HelpModals({ arm, help }) {
   if (help.open === "forwarding") return <ForwardingModal arm={arm} onClose={help.close} />;
-  if (help.open === "points") return <PointsModal arm={arm} onClose={help.close} />;
+  if (help.open === "cost") return <CostModal arm={arm} onClose={help.close} />;
   return null;
 }
 
@@ -105,7 +105,7 @@ export function Send({ arm, round, onDone }) {
       {round.practice && (
         <Guide>
           Your situation and targets are private. Choose the description the mediator will pass to {roles.partner}. You can send
-          any of the four. Your points always use your real targets.
+          any of the four. Your cost always uses your real targets.
         </Guide>
       )}
       <H1>Send your message.</H1>
@@ -170,7 +170,7 @@ export function Send({ arm, round, onDone }) {
         >
           {sent === null ? "Choose a message" : "Send selected message"}
         </Button>
-        <LinkButton onClick={() => help.show("points")}>How points work</LinkButton>
+        <LinkButton onClick={() => help.show("cost")}>How cost works</LinkButton>
       </Footer>
       <HelpModals arm={arm} help={help} />
     </div>
@@ -211,20 +211,20 @@ function CrateInput({ value, onChange, min, max, label }) {
   );
 }
 
-// Expected points for every shipment, with the current one marked. Click or drag to set it.
-function PointsChart({ arm, situation, guess, ship, onShip }) {
+// Expected cost for every shipment, with the current one marked. Click or drag to set it.
+function CostChart({ arm, situation, guess, ship, onShip }) {
   const W = 420;
   const H = 210;
   const pad = { l: 44, r: 22, t: 26, b: 34 };
   const xs = [];
   for (let a = arm.min; a <= arm.max; a += 5) xs.push(a);
-  const ys = xs.map((a) => expectedPoints(arm, a, situation, guess));
-  const yLow = Math.max(0, Math.floor(Math.min(...ys) / 10) * 10);
-  const yHigh = arm.base;
+  const ys = xs.map((a) => expectedCost(arm, a, situation, guess));
+  const yLow = 0;
+  const yHigh = Math.ceil(Math.max(...ys) / 20) * 20;
   const X = (a) => pad.l + ((a - arm.min) / (arm.max - arm.min)) * (W - pad.l - pad.r);
-  const Y = (v) => pad.t + (1 - (Math.max(yLow, v) - yLow) / (yHigh - yLow)) * (H - pad.t - pad.b);
+  const Y = (v) => pad.t + (1 - (Math.min(yHigh, v) - yLow) / (yHigh - yLow)) * (H - pad.t - pad.b);
   const path = xs.map((a, i) => `${i ? "L" : "M"}${X(a).toFixed(1)},${Y(ys[i]).toFixed(1)}`).join("");
-  const now = expectedPoints(arm, ship, situation, guess);
+  const now = expectedCost(arm, ship, situation, guess);
   const yTicks = [yLow, (yLow + yHigh) / 2, yHigh];
   const half = Math.round(arm.max / 50) * 25; // a round number near the middle
   const xTicks = [arm.min, -half, 0, half, arm.max].filter((a) => a >= arm.min && a <= arm.max);
@@ -241,7 +241,7 @@ function PointsChart({ arm, situation, guess, ship, onShip }) {
       viewBox={`0 0 ${W} ${H}`}
       className="w-full select-none touch-none cursor-pointer"
       role="img"
-      aria-label={`Expected points chart. At ${formatCrates(ship)} crates you expect ${formatPoints(now)} points.`}
+      aria-label={`Expected cost chart. At ${formatCrates(ship)} crates you expect a cost of ${formatCost(now)}.`}
       onPointerDown={(e) => {
         dragging.current = true;
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -252,7 +252,7 @@ function PointsChart({ arm, situation, guess, ship, onShip }) {
     >
       {yTicks.map((v) => (
         <g key={v}>
-          <line x1={pad.l} x2={W - pad.r} y1={Y(v)} y2={Y(v)} stroke="#dcd6c8" strokeDasharray={v === yHigh ? "" : "3 3"} />
+          <line x1={pad.l} x2={W - pad.r} y1={Y(v)} y2={Y(v)} stroke="#dcd6c8" strokeDasharray={v === yLow ? "" : "3 3"} />
           <text x={pad.l - 6} y={Y(v) + 4} textAnchor="end" fontSize="11" fill="#77705f">
             {v}
           </text>
@@ -270,8 +270,8 @@ function PointsChart({ arm, situation, guess, ship, onShip }) {
       <path d={path} fill="none" stroke="#1d1c1a" strokeWidth="2" />
       <line x1={X(ship)} x2={X(ship)} y1={Y(now)} y2={H - pad.b} stroke="#e2571e" strokeDasharray="2 3" />
       <circle cx={X(ship)} cy={Y(now)} r="6" fill="#e2571e" />
-      <text x={Math.min(W - 40, Math.max(pad.l + 30, X(ship)))} y={Y(now) - 11} textAnchor="middle" fontSize="13" fontWeight="600" fill="#1d1c1a">
-        {formatPoints(now)}
+      <text x={Math.min(W - 40, Math.max(pad.l + 30, X(ship)))} y={Math.max(14, Y(now) - 11)} textAnchor="middle" fontSize="13" fontWeight="600" fill="#1d1c1a">
+        {formatCost(now)}
       </text>
     </svg>
   );
@@ -293,14 +293,14 @@ export function Ship({ arm, round, onDone }) {
     touched.current.guess = true;
     setGuess(v);
   };
-  const now = expectedPoints(arm, ship, round.situation, guess);
+  const now = expectedCost(arm, ship, round.situation, guess);
 
   return (
     <div className="space-y-6">
       {round.practice && (
         <Guide>
           This is the description the mediator delivered from {roles.partner}. {roles.partner} has already decided its shipment. Try
-          shipments and a guess of {roles.partner}'s shipment: the chart shows your expected points for each shipment.
+          shipments and a guess of {roles.partner}'s shipment: the chart shows your expected cost for each shipment. Lower is better.
         </Guide>
       )}
       <H1>Choose your shipment</H1>
@@ -338,10 +338,10 @@ export function Ship({ arm, round, onDone }) {
           </div>
           <div className="space-y-2 border-t border-line pt-5">
             <div className="flex items-baseline justify-between">
-              <h3 className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">Expected points</h3>
-              <span className="font-mono text-[22px] font-semibold text-accent tabular-nums">{formatPoints(now)}</span>
+              <h3 className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">Expected cost</h3>
+              <span className="font-mono text-[22px] font-semibold text-accent tabular-nums">{formatCost(now)}</span>
             </div>
-            <PointsChart
+            <CostChart
               arm={arm}
               situation={round.situation}
               guess={guess}
@@ -398,7 +398,7 @@ export function Ship({ arm, round, onDone }) {
             onDone({
               ship,
               guess,
-              expectedAtShip: now,
+              expectedCostAtShip: now,
               shipTouched: touched.current.ship,
               guessTouched: touched.current.guess,
               chartUses: touched.current.chart,
@@ -409,7 +409,7 @@ export function Ship({ arm, round, onDone }) {
         >
           Confirm {formatCrates(ship)} crates
         </Button>
-        <LinkButton onClick={() => help.show("points")}>How points work</LinkButton>
+        <LinkButton onClick={() => help.show("cost")}>How cost works</LinkButton>
       </Footer>
       <HelpModals arm={arm} help={help} />
     </div>
@@ -447,8 +447,8 @@ function ResultLine({ target, ship, partner }) {
 export function Results({ arm, round, last, onNext }) {
   const roles = useRoles();
   const help = useHelp();
-  const lossT = targetLoss(arm, round.ship, round.target);
-  const lossS = partnerLoss(arm, round.ship, round.partnerShip);
+  const costT = targetCost(arm, round.ship, round.target);
+  const costS = partnerCost(arm, round.ship, round.partnerShip);
   const changedToPartner = round.toPartner !== round.sent;
   const changedFromPartner = round.fromPartner !== round.partnerSent;
   const n = (id) => situationName(arm, id);
@@ -456,15 +456,15 @@ export function Results({ arm, round, last, onNext }) {
     <div className="space-y-10">
       {round.practice && (
         <Guide>
-          Now the market is known. Your points come from how far you shipped from your real target and from {roles.partner}'s
-          shipment.
+          Now the market is known. Your cost comes from how far you shipped from your real target and from {roles.partner}'s
+          shipment. Lower is better.
         </Guide>
       )}
       <div>
         <Kicker>{round.practice ? "Practice round · not paid" : `Round ${round.n}`}</Kicker>
         <h2 className="mt-1 text-[28px] font-semibold tracking-tight text-ink">
-          You scored <span className="font-mono text-accent tabular-nums">{formatPoints(round.points)}</span>
-          <span className="text-faint font-normal"> of {arm.base} points</span>
+          Your cost: <span className="font-mono text-accent tabular-nums">{formatCost(round.cost)}</span>
+          <span className="text-faint font-normal"> (lower is better)</span>
         </h2>
         <P className="mt-1">
           The market was <span className="text-ink">{MARKET_NAMES[round.market].toLowerCase()}</span>.
@@ -483,14 +483,13 @@ export function Results({ arm, round, last, onNext }) {
 
       <div className="grid gap-10 md:grid-cols-2">
         <div className="space-y-3">
-          <Section>How your points were calculated</Section>
+          <Section>How your cost was calculated</Section>
           <dl className="font-mono text-[14px] text-ink tabular-nums">
-            <Row label="Starting points" value={arm.base.toFixed(2)} />
-            <Row label={`${dist(round.ship, round.target)} crates from your target`} value={`−${formatPoints(lossT)}`} />
-            <Row label={`${dist(round.ship, round.partnerShip)} crates from ${roles.partner}`} value={`−${formatPoints(lossS)}`} />
+            <Row label={`${dist(round.ship, round.target)} crates from your target`} value={formatCost(costT)} />
+            <Row label={`${dist(round.ship, round.partnerShip)} crates from ${roles.partner}`} value={`+ ${formatCost(costS)}`} />
             <div className="mt-2 flex justify-between border-t border-line pt-2 font-semibold">
-              <dt>Final points</dt>
-              <dd>{formatPoints(round.points)}</dd>
+              <dt>Cost</dt>
+              <dd>{formatCost(round.cost)}</dd>
             </div>
           </dl>
           <p className="text-[13px] text-muted">
@@ -528,7 +527,7 @@ export function Results({ arm, round, last, onNext }) {
       </div>
 
       <Footer>
-        <LinkButton onClick={() => help.show("points")}>How points work</LinkButton>
+        <LinkButton onClick={() => help.show("cost")}>How cost works</LinkButton>
         <span className="flex-1" />
         <Button onClick={onNext}>{last ? "Continue" : "Next round"}</Button>
       </Footer>

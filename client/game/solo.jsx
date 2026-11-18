@@ -5,6 +5,7 @@ import {
   drawMarket,
   drawSituation,
   playProgrammedPartner,
+  cost,
   points,
   programmedMessage,
   suggestion,
@@ -46,7 +47,7 @@ export function SoloRound({ arm, round: start, last = false, onDone }) {
   };
   const onShip = (choice) => {
     const d = target(arm, round.situation, round.market);
-    setRound({ ...round, ...choice, target: d, points: points(arm, choice.ship, d, round.partnerShip) });
+    setRound({ ...round, ...choice, target: d, cost: cost(arm, choice.ship, d, round.partnerShip), points: points(arm, choice.ship, d, round.partnerShip) });
     setStep("results");
   };
 
