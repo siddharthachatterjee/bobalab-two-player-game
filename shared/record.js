@@ -23,9 +23,10 @@ export function roundRecord(r) {
     guessTouched: r.guessTouched,
     shipTouched: r.shipTouched,
     chartUses: r.chartUses,
-    expectedAtShip: r.expectedAtShip,
+    expectedCostAtShip: r.expectedCostAtShip,
     target: r.target,
-    points: r.points,
+    cost: r.cost, // what the player saw (lower is better)
+    points: r.points, // the spec's points, same ranking: base − c·COST_SCALE·cost
     secSend: r.secSend,
     secShip: r.secShip,
     helpSend: r.helpSend,

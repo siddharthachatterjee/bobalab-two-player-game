@@ -1,7 +1,7 @@
 // Instructions, comprehension quiz, attention check and the screens between them.
 // All arm-specific text and quiz answers come from the arm.
 import React, { useEffect, useMemo, useState } from "react";
-import { formatCoef, formatCrates, formatPoints, pct, points, situationName } from "../../shared/rules.js";
+import { cost, formatCost, formatCrates, formatDollars, pct, situationName } from "../../shared/rules.js";
 import {
   Box,
   Button,
@@ -12,7 +12,8 @@ import {
   LinkButton,
   P,
   Page,
-  PointsModal,
+  CostFormula,
+  CostModal,
   Progress,
   Section,
   SituationTable,
@@ -37,7 +38,7 @@ function Fact({ label, children }) {
   );
 }
 
-function Overview({ arm, onPoints }) {
+function Overview({ arm, onCost }) {
   const roles = useRoles();
   const ex = arm.situations[arm.displayOrder[1]];
   return (
@@ -50,7 +51,7 @@ function Overview({ arm, onPoints }) {
         </P>
       )}
       <Box label="The game in one line">
-        You and the {roles.partnerPlant} each choose how many more or fewer crates to ship than normal. You score more when you ship
+        You and the {roles.partnerPlant} each choose how many more or fewer crates to ship than normal. Your cost is lower when you ship
         close to your own target and close to the {roles.partnerPlant}.
       </Box>
       <ol className="max-w-2xl border-b border-line">
@@ -72,9 +73,9 @@ function Overview({ arm, onPoints }) {
           Knows whether the market is low or high. You see the chances, not the outcome. The market is shown after
           shipping.
         </Fact>
-        <Fact label="Your points">
-          Start with {arm.base} points. Lose points for missing your target and for shipping a different amount from{" "}
-          {roles.partner}. <LinkButton onClick={onPoints}>How points work</LinkButton>
+        <Fact label="Your cost">
+          Each round has a shipping cost: it grows when you miss your target and when you ship a different amount from{" "}
+          {roles.partner}. Lower is better. <LinkButton onClick={onCost}>How cost works</LinkButton>
         </Fact>
       </dl>
       <P>
@@ -85,7 +86,7 @@ function Overview({ arm, onPoints }) {
   );
 }
 
-function Rules({ arm, onPoints }) {
+function Rules({ arm, onCost }) {
   const { roles, session } = useGame();
   return (
     <>
@@ -129,19 +130,15 @@ function Rules({ arm, onPoints }) {
         </div>
       )}
       <div className="space-y-3">
-        <Section>Points and bonus</Section>
-        <Box>
-          <div className="font-mono text-[14px] leading-7">
-            Points = {arm.base} − {formatCoef(arm.c * (1 - arm.gamma))} × (your shipment − your target)²
-            <br />
-            <span className="invisible">Points = {arm.base} </span>− {formatCoef(arm.c * arm.gamma)} × (your shipment − {roles.partner}'s shipment)²
-          </div>
-        </Box>
+        <Section>Cost and bonus</Section>
+        <CostFormula arm={arm} />
         <P strong>
           You'll play {session.practice} practice rounds, a short quiz, then {session.paid} paid rounds. One paid round
-          is picked at random and pays {session.dollarsPerPoint * 100}¢ per point.
+          is picked at random. Your bonus is {formatDollars(session.pay.max)} minus{" "}
+          {Math.round(session.pay.perCost * 100)}¢ for each unit of that round's cost (never below $0), so a lower cost
+          pays more.
         </P>
-        <LinkButton onClick={onPoints}>How points work, with an example</LinkButton>
+        <LinkButton onClick={onCost}>How cost works, with an example</LinkButton>
       </div>
     </>
   );
@@ -149,10 +146,10 @@ function Rules({ arm, onPoints }) {
 
 export function Instructions({ arm, onDone }) {
   const [page, setPage] = useState(0);
-  const [points, setPoints] = useState(false);
+  const [costHelp, setCostHelp] = useState(false);
   const pages = [
-    { kicker: "Before you begin", body: <Overview arm={arm} onPoints={() => setPoints(true)} /> },
-    { kicker: "This session's rules", body: <Rules arm={arm} onPoints={() => setPoints(true)} /> },
+    { kicker: "Before you begin", body: <Overview arm={arm} onCost={() => setCostHelp(true)} /> },
+    { kicker: "This session's rules", body: <Rules arm={arm} onCost={() => setCostHelp(true)} /> },
   ];
   const last = page === pages.length - 1;
   useEffect(scrollToTop, [page]);
@@ -177,7 +174,7 @@ export function Instructions({ arm, onDone }) {
           <Button onClick={() => (last ? onDone() : setPage(page + 1))}>{last ? "Try a practice round" : "Next"}</Button>
         </div>
       </Page>
-      {points && <PointsModal arm={arm} onClose={() => setPoints(false)} />}
+      {costHelp && <CostModal arm={arm} onClose={() => setCostHelp(false)} />}
     </>
   );
 }
@@ -198,9 +195,9 @@ function questions(arm, roles) {
       for (const s of arm.displayOrder) if (arm.forward[m][s] !== s && fw.changed === undefined) fw = { market: m, sent: s, changed: true };
   const delivered = arm.forwarding === "unchanged" ? fw.sent : arm.forward[fw.market][fw.sent];
 
-  const pts = points(arm, 40, 20, 40);
-  const ptsOpts = [arm.base, pts, points(arm, 40, 20, 20 - 20), arm.base - 20];
-  const ptsUnique = [...new Set(ptsOpts.map((v) => formatPoints(v)))];
+  const c = cost(arm, 40, 20, 40);
+  const costOpts = [0, c, cost(arm, 40, 20, 0), 20];
+  const costUnique = [...new Set(costOpts.map((v) => formatCost(v)))];
 
   return [
     {
@@ -225,9 +222,9 @@ function questions(arm, roles) {
       fixedOrder: true, // the situations keep their usual order
     },
     {
-      q: `Your target is +20, you ship +40, and ${roles.partner} also ships +40. How many points do you get?`,
-      options: ptsUnique,
-      answer: ptsUnique.indexOf(formatPoints(pts)),
+      q: `Your target is +20, you ship +40, and ${roles.partner} also ships +40. What is your cost?`,
+      options: costUnique,
+      answer: costUnique.indexOf(formatCost(c)),
     },
   ];
 }
@@ -272,7 +269,7 @@ export function Quiz({ arm, onDone }) {
           <P className="mt-2">You need all five right to continue. You get two tries.</P>
         )}
         <div className="mt-2">
-          <LinkButton onClick={() => setHelp(true)}>How points work</LinkButton>
+          <LinkButton onClick={() => setHelp(true)}>How cost works</LinkButton>
         </div>
       </div>
       {qs.map((q, i) => (
@@ -299,7 +296,7 @@ export function Quiz({ arm, onDone }) {
       <Button disabled={answers.includes(null)} onClick={submit}>
         Check answers
       </Button>
-      {help && <PointsModal arm={arm} onClose={() => setHelp(false)} />}
+      {help && <CostModal arm={arm} onClose={() => setHelp(false)} />}
     </Page>
   );
 }

@@ -159,7 +159,21 @@ export function expectedPoints(arm, a, situation, guess) {
   return arm.base - arm.c * ((1 - arm.gamma) * miss + arm.gamma * (a - guess) ** 2);
 }
 
-// The shipment that maximizes expected points for a given guess.
+// ---------------------------------------------------------------- cost (what players see)
+// Players see a shipping cost to minimize instead of points: the spec's loss
+// (1−γ)(A−D)² + γ(A−A_partner)², divided by COST_SCALE so it reads in small numbers
+// (a 10-crate gap costs 1 at weight 1). points = base − c·COST_SCALE·cost, so the
+// two always rank choices the same way.
+export const COST_SCALE = 100;
+export const targetCost = (arm, a, d) => ((1 - arm.gamma) * (a - d) ** 2) / COST_SCALE;
+export const partnerCost = (arm, a, aPartner) => (arm.gamma * (a - aPartner) ** 2) / COST_SCALE;
+export const cost = (arm, a, d, aPartner) => targetCost(arm, a, d) + partnerCost(arm, a, aPartner);
+export const expectedCost = (arm, a, situation, guess) => (arm.base - expectedPoints(arm, a, situation, guess)) / (arm.c * COST_SCALE);
+
+// Bonus for the paid round picked: pay.max dollars minus pay.perCost per unit of cost, never below 0.
+export const bonusDollars = (pay, c) => Math.max(0, pay.max - pay.perCost * c);
+
+// The shipment that maximizes expected points (minimizes expected cost) for a given guess.
 export function bestExpected(arm, situation, guess) {
   const dMean = (1 - arm.p) * target(arm, situation, "low") + arm.p * target(arm, situation, "high");
   return (1 - arm.gamma) * dMean + arm.gamma * guess;
@@ -176,6 +190,7 @@ export function formatCrates(a, digits = 0) {
   return `${a > 0 ? "+" : "−"}${r}`;
 }
 export const formatPoints = (pts) => pts.toFixed(2);
+export const formatCost = (x) => x.toFixed(2);
 export const formatDollars = (d) => `$${d.toFixed(2)}`;
 export const pct = (x) => `${Math.round(x * 100)}%`;
 // A loss coefficient like 0.0004, without float noise.
